@@ -1,4 +1,5 @@
 import { Calendar } from './components/Calendar'
+import { habits } from './lib/habits'
 
 function App() {
   return (
@@ -21,39 +22,57 @@ function App() {
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200">
-              <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg"></div>
-              <div>
-                <span className="font-semibold text-blue-800">📝 Daily Diary</span>
-                <p className="text-sm text-blue-600">Reflect on your day</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200">
-              <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg shadow-lg"></div>
-              <div>
-                <span className="font-semibold text-emerald-800">💪 Workout</span>
-                <p className="text-sm text-emerald-600">Stay active and strong</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200">
-              <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg shadow-lg"></div>
-              <div>
-                <span className="font-semibold text-purple-800">📚 Reading</span>
-                <p className="text-sm text-purple-600">Expand your knowledge</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-red-50 to-red-100 border border-red-200">
-              <div className="w-6 h-6 bg-gradient-to-r from-red-500 to-red-600 rounded-lg shadow-lg flex items-center justify-center text-white text-xs font-bold">
-                #
-              </div>
-              <div>
-                <span className="font-semibold text-red-800">🚫 Social Media Resistance</span>
-                <p className="text-sm text-red-600">Count times you avoided distractions</p>
-              </div>
-            </div>
+            {habits.map((habit) => {
+              const colorClasses: Record<string, { container: string; badge: string; title: string; subtitle: string }> = {
+                blue: {
+                  container: 'from-blue-50 to-blue-100 border-blue-200',
+                  badge: 'from-blue-500 to-blue-600',
+                  title: 'text-blue-800',
+                  subtitle: 'text-blue-600',
+                },
+                emerald: {
+                  container: 'from-emerald-50 to-emerald-100 border-emerald-200',
+                  badge: 'from-emerald-500 to-emerald-600',
+                  title: 'text-emerald-800',
+                  subtitle: 'text-emerald-600',
+                },
+                purple: {
+                  container: 'from-purple-50 to-purple-100 border-purple-200',
+                  badge: 'from-purple-500 to-purple-600',
+                  title: 'text-purple-800',
+                  subtitle: 'text-purple-600',
+                },
+                red: {
+                  container: 'from-red-50 to-red-100 border-red-200',
+                  badge: 'from-red-500 to-red-600',
+                  title: 'text-red-800',
+                  subtitle: 'text-red-600',
+                },
+              }
+              const c = colorClasses[habit.color] ?? colorClasses.blue
+              return (
+                <div
+                  key={habit.id}
+                  className={`flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r ${c.container} border`}
+                >
+                  <div
+                    className={`w-6 h-6 bg-gradient-to-r ${c.badge} rounded-lg shadow-lg flex items-center justify-center text-white text-xs font-bold`}
+                  >
+                    {habit.type === 'counter' ? habit.emoji : ''}
+                  </div>
+                  <div>
+                    <span className={`font-semibold ${c.title}`}>
+                      {habit.name}
+                    </span>
+                    <p className={`text-sm ${c.subtitle}`}>
+                      {habit.type === 'toggle'
+                        ? 'Reflect on your day'
+                        : 'Count times you avoided distractions'}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
           </div>
           
           <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl border border-amber-200">
