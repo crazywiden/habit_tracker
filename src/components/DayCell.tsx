@@ -70,14 +70,17 @@ export const DayCell: React.FC<DayCellProps> = ({ day, date }) => {
       const dateStr = formatDate(date)
       const { error } = await supabase
         .from('habit_entries')
-        .upsert({
-          date: dateStr,
-          daily_diary: newHabits.dailyDiary,
-          workout: newHabits.workout,
-          reading: newHabits.reading,
-          social_media_counter: newHabits.socialMediaCounter,
-          updated_at: new Date().toISOString()
-        })
+        .upsert(
+          {
+            date: dateStr,
+            daily_diary: newHabits.dailyDiary,
+            workout: newHabits.workout,
+            reading: newHabits.reading,
+            social_media_counter: newHabits.socialMediaCounter,
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: 'date' }
+        )
       
       if (error) {
         console.error('Error saving habits:', error)
