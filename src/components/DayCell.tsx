@@ -34,59 +34,84 @@ export const DayCell: React.FC<DayCellProps> = ({ day, date }) => {
 
   const loadHabits = async () => {
     if (!date) return
-    if (!supabase) return
+    const dateStr = formatDate(date)
     
-    try {
-      const dateStr = formatDate(date)
-      const { data, error } = await supabase
-        .from('habit_entries')
-        .select('*')
-        .eq('date', dateStr)
-      
-      if (error) {
-        console.error('Error loading habits:', error)
-        return
-      }
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('habit_entries')
+          .select('*')
+          .eq('date', dateStr)
+        
+        if (error) {
+          console.error('Error loading habits:', error)
+          return
+        }
 
-      if (data && data.length > 0) {
-        const entry = data[0]
-        setHabitData({
-          dailyDiary: entry.daily_diary || false,
-          workout: entry.workout || false,
-          reading: entry.reading || false,
-          socialMediaCounter: entry.social_media_counter || 0
-        })
+        if (data && data.length > 0) {
+          const entry = data[0]
+          setHabitData({
+            dailyDiary: entry.daily_diary || false,
+            workout: entry.workout || false,
+            reading: entry.reading || false,
+            socialMediaCounter: entry.social_media_counter || 0
+          })
+        }
+      } catch (error) {
+        console.error('Error loading habits:', error)
       }
-    } catch (error) {
-      console.error('Error loading habits:', error)
+    } else {
+      // Fallback to localStorage when Supabase is not available
+      try {
+        const stored = localStorage.getItem(`habits-${dateStr}`)
+        if (stored) {
+          const parsedData = JSON.parse(stored)
+          setHabitData({
+            dailyDiary: parsedData.dailyDiary || false,
+            workout: parsedData.workout || false,
+            reading: parsedData.reading || false,
+            socialMediaCounter: parsedData.socialMediaCounter || 0
+          })
+        }
+      } catch (error) {
+        console.error('Error loading habits from localStorage:', error)
+      }
     }
   }
 
   const saveHabits = async (newHabits: HabitData) => {
     if (!date) return
-    if (!supabase) return
+    const dateStr = formatDate(date)
     
-    try {
-      const dateStr = formatDate(date)
-      const { error } = await supabase
-        .from('habit_entries')
-        .upsert(
-          {
-            date: dateStr,
-            daily_diary: newHabits.dailyDiary,
-            workout: newHabits.workout,
-            reading: newHabits.reading,
-            social_media_counter: newHabits.socialMediaCounter,
-            updated_at: new Date().toISOString()
-          },
-          { onConflict: 'date' }
-        )
-      
-      if (error) {
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('habit_entries')
+          .upsert(
+            {
+              date: dateStr,
+              daily_diary: newHabits.dailyDiary,
+              workout: newHabits.workout,
+              reading: newHabits.reading,
+              social_media_counter: newHabits.socialMediaCounter,
+              updated_at: new Date().toISOString()
+            },
+            { onConflict: 'date' }
+          )
+        
+        if (error) {
+          console.error('Error saving habits:', error)
+        }
+      } catch (error) {
         console.error('Error saving habits:', error)
       }
-    } catch (error) {
-      console.error('Error saving habits:', error)
+    } else {
+      // Fallback to localStorage when Supabase is not available
+      try {
+        localStorage.setItem(`habits-${dateStr}`, JSON.stringify(newHabits))
+      } catch (error) {
+        console.error('Error saving habits to localStorage:', error)
+      }
     }
   }
 

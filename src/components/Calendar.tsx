@@ -73,7 +73,7 @@ export const Calendar: React.FC = () => {
         <div className="grid grid-cols-7 gap-2">
           {days.map((day, index) => (
             <DayCell 
-              key={index} 
+              key={day ? `${year}-${month}-${day}` : `empty-${index}`} 
               day={day} 
               date={day ? new Date(year, month, day) : null}
             />
