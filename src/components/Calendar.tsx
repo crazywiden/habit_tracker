@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { DayCell } from './DayCell'
+import { DailyView } from './DailyView'
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -8,8 +9,11 @@ const MONTHS = [
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
+type ViewMode = 'monthly' | 'daily'
+
 export const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [viewMode, setViewMode] = useState<ViewMode>('monthly')
   
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -36,6 +40,27 @@ export const Calendar: React.FC = () => {
   const goToNextMonth = () => {
     setCurrentDate(new Date(year, month + 1, 1))
   }
+
+  const goToPreviousDay = () => {
+    const newDate = new Date(currentDate)
+    newDate.setDate(newDate.getDate() - 1)
+    setCurrentDate(newDate)
+  }
+
+  const goToNextDay = () => {
+    const newDate = new Date(currentDate)
+    newDate.setDate(newDate.getDate() + 1)
+    setCurrentDate(newDate)
+  }
+
+  if (viewMode === 'daily') {
+    return <DailyView 
+      currentDate={currentDate}
+      onPreviousDay={goToPreviousDay}
+      onNextDay={goToNextDay}
+      onViewModeChange={setViewMode}
+    />
+  }
   
   return (
     <div className="max-w-5xl mx-auto">
@@ -49,9 +74,17 @@ export const Calendar: React.FC = () => {
             <span className="font-medium">Previous</span>
           </button>
           
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-            {MONTHS[month]} {year}
-          </h1>
+          <div className="flex flex-col items-center gap-4">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+              {MONTHS[month]} {year}
+            </h1>
+            <button
+              onClick={() => setViewMode('daily')}
+              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white text-sm rounded-lg hover:from-emerald-600 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+            >
+              Switch to Daily View
+            </button>
+          </div>
           
           <button
             onClick={goToNextMonth}
