@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { habits as habitsConfig } from '../lib/habits'
+import { useNavigation } from '../hooks/useNavigation'
 
 interface DailyViewProps {
   currentDate: Date
@@ -29,6 +30,7 @@ export const DailyView: React.FC<DailyViewProps> = ({
   onNextDay, 
   onViewModeChange 
 }) => {
+  const { navigateToHabitDetail } = useNavigation()
   const [habitData, setHabitData] = useState<HabitData>({
     dailyDiary: false,
     workout: false,
@@ -248,7 +250,7 @@ export const DailyView: React.FC<DailyViewProps> = ({
                     }
                   }}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-3">
                     <div>
                       <div className={`text-2xl mb-2 ${isCompleted ? 'text-white' : 'text-gray-600'}`}>
                         {habit.emoji}
@@ -265,6 +267,20 @@ export const DailyView: React.FC<DailyViewProps> = ({
                       {isCompleted && <span className="text-gray-600 text-lg">✓</span>}
                     </div>
                   </div>
+                  
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigateToHabitDetail(habit.id, currentDate)
+                    }}
+                    className={`w-full py-2 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      isCompleted 
+                        ? 'bg-white/20 hover:bg-white/30 text-white' 
+                        : 'bg-gray-600/20 hover:bg-gray-600/30 text-gray-700'
+                    }`}
+                  >
+                    📊 View Details
+                  </button>
                 </div>
               )
             }
@@ -289,7 +305,7 @@ export const DailyView: React.FC<DailyViewProps> = ({
                     </div>
                   </div>
                   
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 mb-3">
                     <button
                       onClick={decrementCounter}
                       className="flex-1 bg-white/20 hover:bg-white/30 text-white py-3 px-4 rounded-xl font-medium transition-all duration-200 backdrop-blur-sm"
@@ -304,6 +320,13 @@ export const DailyView: React.FC<DailyViewProps> = ({
                       + Add
                     </button>
                   </div>
+
+                  <button
+                    onClick={() => navigateToHabitDetail(habit.id, currentDate)}
+                    className="w-full bg-white/20 hover:bg-white/30 text-white py-2 px-4 rounded-xl text-sm font-medium transition-all duration-200 backdrop-blur-sm"
+                  >
+                    📊 View Details
+                  </button>
                 </div>
               )
             }
