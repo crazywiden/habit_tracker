@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useNavigation } from '../hooks/useNavigation'
+import { useHabitData } from '../contexts/HabitDataContext'
 
 interface DiaryPageProps {
   currentDate: Date
@@ -39,6 +40,7 @@ const WEATHER_OPTIONS = ['☀️', '⛅', '☁️', '🌧️', '⛈️', '🌦�
 
 export const DiaryPage: React.FC<DiaryPageProps> = ({ currentDate, onDateChange }) => {
   const { setPage } = useNavigation()
+  const { getHabitData, toggleHabit } = useHabitData()
   const [diaryData, setDiaryData] = useState<DiaryData>({
     completed: false,
     mood: 5,
@@ -65,6 +67,9 @@ export const DiaryPage: React.FC<DiaryPageProps> = ({ currentDate, onDateChange 
   const loadDiaryData = useCallback(async () => {
     const dateStr = formatDate(currentDate)
     
+    // Get habit data to sync completion status
+    const habitData = getHabitData(currentDate)
+    
     if (supabase) {
       try {
         const { data, error } = await supabase
@@ -80,7 +85,7 @@ export const DiaryPage: React.FC<DiaryPageProps> = ({ currentDate, onDateChange 
         if (data && data.length > 0) {
           const entry = data[0]
           setDiaryData({
-            completed: entry.completed || false,
+            completed: habitData.dailyDiary, // Sync with habit data
             mood: entry.mood || 5,
             gratitude: entry.gratitude || ['', '', ''],
             keyEvents: entry.key_events || '',
@@ -97,7 +102,7 @@ export const DiaryPage: React.FC<DiaryPageProps> = ({ currentDate, onDateChange 
           })
         } else {
           setDiaryData({
-            completed: false,
+            completed: habitData.dailyDiary, // Sync with habit data
             mood: 5,
             gratitude: ['', '', ''],
             keyEvents: '',
@@ -120,10 +125,14 @@ export const DiaryPage: React.FC<DiaryPageProps> = ({ currentDate, onDateChange 
       try {
         const stored = localStorage.getItem(`diary-${dateStr}`)
         if (stored) {
-          setDiaryData(JSON.parse(stored))
+          const parsedData = JSON.parse(stored)
+          setDiaryData({
+            ...parsedData,
+            completed: habitData.dailyDiary // Sync with habit data
+          })
         } else {
           setDiaryData({
-            completed: false,
+            completed: habitData.dailyDiary, // Sync with habit data
             mood: 5,
             gratitude: ['', '', ''],
             keyEvents: '',
@@ -143,7 +152,7 @@ export const DiaryPage: React.FC<DiaryPageProps> = ({ currentDate, onDateChange 
         console.error('Error loading diary data from localStorage:', error)
       }
     }
-  }, [currentDate])
+  }, [currentDate, getHabitData])
 
   useEffect(() => {
     loadDiaryData()
@@ -250,6 +259,10 @@ export const DiaryPage: React.FC<DiaryPageProps> = ({ currentDate, onDateChange 
   }
 
   const toggleDiaryComplete = () => {
+    // Toggle the habit in centralized state
+    toggleHabit(currentDate, 'dailyDiary')
+    
+    // Update local diary data
     const newData = {
       ...diaryData,
       completed: !diaryData.completed

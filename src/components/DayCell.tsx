@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import React, { useEffect } from 'react'
 import { habits as habitsConfig } from '../lib/habits'
+import { useHabitData } from '../contexts/HabitDataContext'
 
 interface DayCellProps {
   day: number | null
@@ -15,122 +15,31 @@ interface HabitData {
 }
 
 export const DayCell: React.FC<DayCellProps> = ({ day, date }) => {
-  const [habitData, setHabitData] = useState<HabitData>({
+  const { getHabitData, toggleHabit, incrementCounter, refreshHabitData } = useHabitData()
+  
+  const habitData = date ? getHabitData(date) : {
     dailyDiary: false,
     workout: false,
     reading: false,
     socialMediaCounter: 0
-  })
-
-  const formatDate = (date: Date) => {
-    return date.toISOString().split('T')[0]
   }
 
   useEffect(() => {
     if (date) {
-      loadHabits()
+      refreshHabitData(date)
     }
-  }, [date])
+  }, [date, refreshHabitData])
 
-  const loadHabits = async () => {
-    if (!date) return
-    const dateStr = formatDate(date)
-    
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('habit_entries')
-          .select('*')
-          .eq('date', dateStr)
-        
-        if (error) {
-          console.error('Error loading habits:', error)
-          return
-        }
-
-        if (data && data.length > 0) {
-          const entry = data[0]
-          setHabitData({
-            dailyDiary: entry.daily_diary || false,
-            workout: entry.workout || false,
-            reading: entry.reading || false,
-            socialMediaCounter: entry.social_media_counter || 0
-          })
-        }
-      } catch (error) {
-        console.error('Error loading habits:', error)
-      }
-    } else {
-      // Fallback to localStorage when Supabase is not available
-      try {
-        const stored = localStorage.getItem(`habits-${dateStr}`)
-        if (stored) {
-          const parsedData = JSON.parse(stored)
-          setHabitData({
-            dailyDiary: parsedData.dailyDiary || false,
-            workout: parsedData.workout || false,
-            reading: parsedData.reading || false,
-            socialMediaCounter: parsedData.socialMediaCounter || 0
-          })
-        }
-      } catch (error) {
-        console.error('Error loading habits from localStorage:', error)
-      }
+  const handleToggleHabit = (habitType: 'dailyDiary' | 'workout' | 'reading') => {
+    if (date) {
+      toggleHabit(date, habitType)
     }
   }
 
-  const saveHabits = async (newHabits: HabitData) => {
-    if (!date) return
-    const dateStr = formatDate(date)
-    
-    if (supabase) {
-      try {
-        const { error } = await supabase
-          .from('habit_entries')
-          .upsert(
-            {
-              date: dateStr,
-              daily_diary: newHabits.dailyDiary,
-              workout: newHabits.workout,
-              reading: newHabits.reading,
-              social_media_counter: newHabits.socialMediaCounter,
-              updated_at: new Date().toISOString()
-            },
-            { onConflict: 'date' }
-          )
-        
-        if (error) {
-          console.error('Error saving habits:', error)
-        }
-      } catch (error) {
-        console.error('Error saving habits:', error)
-      }
-    } else {
-      // Fallback to localStorage when Supabase is not available
-      try {
-        localStorage.setItem(`habits-${dateStr}`, JSON.stringify(newHabits))
-      } catch (error) {
-        console.error('Error saving habits to localStorage:', error)
-      }
+  const handleIncrementCounter = () => {
+    if (date) {
+      incrementCounter(date)
     }
-  }
-
-  const toggleHabit = (habitType: 'dailyDiary' | 'workout' | 'reading') => {
-    const newHabits = {
-      ...habitData,
-      [habitType]: !habitData[habitType]
-    }
-    setHabitData(newHabits)
-    saveHabits(newHabits)
-  }
-
-  const incrementCounter = () => {
-    const newHabits = {
-      ...habitData,
-      socialMediaCounter: habitData.socialMediaCounter + 1
-    }
-    setHabitData(newHabits)
-    saveHabits(newHabits)
   }
 
   const getSocialMediaColor = (count: number) => {
@@ -178,7 +87,7 @@ export const DayCell: React.FC<DayCellProps> = ({ day, date }) => {
                 }
                 onClick={() => {
                   if (habit.id !== 'socialMediaCounter') {
-                    toggleHabit(habit.id)
+                    handleToggleHabit(habit.id)
                   }
                 }}
                 title={habit.name}
@@ -196,7 +105,7 @@ export const DayCell: React.FC<DayCellProps> = ({ day, date }) => {
                 className={`rounded-lg cursor-pointer flex items-center justify-center text-xs font-bold text-white transition-all duration-200 transform hover:scale-105 shadow-md ${getSocialMediaColor(
                   habitData.socialMediaCounter
                 )}`}
-                onClick={incrementCounter}
+                onClick={handleIncrementCounter}
                 title={habit.name}
               >
                 {habitData.socialMediaCounter || habit.emoji}

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
+import React, { useEffect } from 'react'
 import { habits as habitsConfig } from '../lib/habits'
 import { useNavigation } from '../hooks/useNavigation'
+import { useHabitData } from '../contexts/HabitDataContext'
 
 interface DailyViewProps {
   currentDate: Date
@@ -31,141 +31,24 @@ export const DailyView: React.FC<DailyViewProps> = ({
   onViewModeChange 
 }) => {
   const { navigateToHabitDetail } = useNavigation()
-  const [habitData, setHabitData] = useState<HabitData>({
-    dailyDiary: false,
-    workout: false,
-    reading: false,
-    socialMediaCounter: 0
-  })
-
-  const formatDate = (date: Date) => {
-    return date.toISOString().split('T')[0]
-  }
-
-  const loadHabits = useCallback(async () => {
-    const dateStr = formatDate(currentDate)
-    
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('habit_entries')
-          .select('*')
-          .eq('date', dateStr)
-        
-        if (error) {
-          console.error('Error loading habits:', error)
-          return
-        }
-
-        if (data && data.length > 0) {
-          const entry = data[0]
-          setHabitData({
-            dailyDiary: entry.daily_diary || false,
-            workout: entry.workout || false,
-            reading: entry.reading || false,
-            socialMediaCounter: entry.social_media_counter || 0
-          })
-        } else {
-          setHabitData({
-            dailyDiary: false,
-            workout: false,
-            reading: false,
-            socialMediaCounter: 0
-          })
-        }
-      } catch (error) {
-        console.error('Error loading habits:', error)
-      }
-    } else {
-      try {
-        const stored = localStorage.getItem(`habits-${dateStr}`)
-        if (stored) {
-          const parsedData = JSON.parse(stored)
-          setHabitData({
-            dailyDiary: parsedData.dailyDiary || false,
-            workout: parsedData.workout || false,
-            reading: parsedData.reading || false,
-            socialMediaCounter: parsedData.socialMediaCounter || 0
-          })
-        } else {
-          setHabitData({
-            dailyDiary: false,
-            workout: false,
-            reading: false,
-            socialMediaCounter: 0
-          })
-        }
-      } catch (error) {
-        console.error('Error loading habits from localStorage:', error)
-      }
-    }
-  }, [currentDate])
+  const { getHabitData, toggleHabit, incrementCounter, decrementCounter, refreshHabitData } = useHabitData()
+  
+  const habitData = getHabitData(currentDate)
 
   useEffect(() => {
-    loadHabits()
-  }, [loadHabits])
+    refreshHabitData(currentDate)
+  }, [currentDate, refreshHabitData])
 
-  const saveHabits = async (newHabits: HabitData) => {
-    const dateStr = formatDate(currentDate)
-    
-    if (supabase) {
-      try {
-        const { error } = await supabase
-          .from('habit_entries')
-          .upsert(
-            {
-              date: dateStr,
-              daily_diary: newHabits.dailyDiary,
-              workout: newHabits.workout,
-              reading: newHabits.reading,
-              social_media_counter: newHabits.socialMediaCounter,
-              updated_at: new Date().toISOString()
-            },
-            { onConflict: 'date' }
-          )
-        
-        if (error) {
-          console.error('Error saving habits:', error)
-        }
-      } catch (error) {
-        console.error('Error saving habits:', error)
-      }
-    } else {
-      try {
-        localStorage.setItem(`habits-${dateStr}`, JSON.stringify(newHabits))
-      } catch (error) {
-        console.error('Error saving habits to localStorage:', error)
-      }
-    }
+  const handleToggleHabit = (habitType: 'dailyDiary' | 'workout' | 'reading') => {
+    toggleHabit(currentDate, habitType)
   }
 
-  const toggleHabit = (habitType: 'dailyDiary' | 'workout' | 'reading') => {
-    const newHabits = {
-      ...habitData,
-      [habitType]: !habitData[habitType]
-    }
-    setHabitData(newHabits)
-    saveHabits(newHabits)
+  const handleIncrementCounter = () => {
+    incrementCounter(currentDate)
   }
 
-  const incrementCounter = () => {
-    const newHabits = {
-      ...habitData,
-      socialMediaCounter: habitData.socialMediaCounter + 1
-    }
-    setHabitData(newHabits)
-    saveHabits(newHabits)
-  }
-
-  const decrementCounter = () => {
-    if (habitData.socialMediaCounter > 0) {
-      const newHabits = {
-        ...habitData,
-        socialMediaCounter: habitData.socialMediaCounter - 1
-      }
-      setHabitData(newHabits)
-      saveHabits(newHabits)
-    }
+  const handleDecrementCounter = () => {
+    decrementCounter(currentDate)
   }
 
   const getSocialMediaColor = (count: number) => {
@@ -246,7 +129,7 @@ export const DailyView: React.FC<DailyViewProps> = ({
                   }`}
                   onClick={() => {
                     if (habit.id !== 'socialMediaCounter') {
-                      toggleHabit(habit.id)
+                      handleToggleHabit(habit.id)
                     }
                   }}
                 >
@@ -307,14 +190,14 @@ export const DailyView: React.FC<DailyViewProps> = ({
                   
                   <div className="flex gap-3 mb-3">
                     <button
-                      onClick={decrementCounter}
+                      onClick={handleDecrementCounter}
                       className="flex-1 bg-white/20 hover:bg-white/30 text-white py-3 px-4 rounded-xl font-medium transition-all duration-200 backdrop-blur-sm"
                       disabled={habitData.socialMediaCounter === 0}
                     >
                       - Remove
                     </button>
                     <button
-                      onClick={incrementCounter}
+                      onClick={handleIncrementCounter}
                       className="flex-1 bg-white/20 hover:bg-white/30 text-white py-3 px-4 rounded-xl font-medium transition-all duration-200 backdrop-blur-sm"
                     >
                       + Add
